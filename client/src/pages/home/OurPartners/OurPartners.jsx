@@ -20,7 +20,7 @@ const partners = [
   { name: "Star People", logo: star_people },
 ];
 
-console.log(partners);
+// console.log(partners);
 
 const OurPartners = () => {
   return (

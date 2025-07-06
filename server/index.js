@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,6 +26,38 @@ async function run() {
     const db = client.db("zap-shift");
     const parcelCollection = db.collection("parcels");
 
+    // get request
+    app.get("/parcels", async (req, res) => {
+      try {
+        const result = await parcelCollection.find().toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.log("error fetching parcel", parcel);
+        res
+          .status(500)
+          .send({ message: "internal server error ", message: error.message });
+      }
+    });
+
+    // get data by user
+    app.get("/parcels", async (req, res) => {
+      try {
+        const userEmail = req.query.email;
+        const query = userEmail ? { senderEmail: userEmail } : {};
+
+        const options = {
+          sort: { creation_date: -1 },
+        };
+        const result = await parcelCollection.find(query, options).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log("error fetching parcel", parcel);
+        res
+          .status(500)
+          .send({ message: "internal server error ", message: error.message });
+      }
+    });
+
     app.post("/parcel", async (req, res) => {
       try {
         const parcel = req.body;
@@ -45,6 +77,22 @@ async function run() {
       }
     });
 
+    // delete routes
+    app.delete("/parcels/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+
+        const result = await parcelCollection.deleteOne(query);
+        res.status(200).send(result);
+      } catch (error) {
+        console.log("Error deleting parcel");
+        res
+          .status(500)
+          .send({ message: "Internal server error", message: error.message });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
@@ -55,6 +103,10 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+app.get("/", (req, res) => {
+  res.send("Parcel is cooking like a hot water");
+});
 
 // --- Start Server ---
 app.listen(port, () => {
